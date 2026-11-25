@@ -1,0 +1,32 @@
+name: Обновить цены Каспи
+
+on:
+  schedule:
+    - cron: "0 3 * * *"      # каждый день в 03:00 UTC = 08:00 Алматы
+  workflow_dispatch:         # кнопка «Run workflow» на вкладке Actions
+
+permissions:
+  contents: write
+
+concurrency:
+  group: prices
+  cancel-in-progress: false
+
+jobs:
+  prices:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests
+      - run: python prices.py
+      - name: Сохранить prices.json
+        run: |
+          git config user.name "prices-bot"
+          git config user.email "prices-bot@users.noreply.github.com"
+          git add prices.json
+          git diff --cached --quiet || git commit -m "цены $(date -u +%Y-%m-%d_%H:%M)"
+          git push
